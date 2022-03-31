@@ -20,9 +20,10 @@ describe("test rootSaga", () => {
 });
 
 // 模拟测试整个 saga
-describe("test rootSaga wholly", () => {
-  test('mockApi')
-
+describe("test the full rootSaga", () => {
+  test('mockApi',()=>{
+    
+  })
 });
 
 

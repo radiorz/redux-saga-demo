@@ -1,11 +1,8 @@
 import eventemitter from "eventemitter2";
 import { eventChannel, runSaga } from "redux-saga";
-import rootSaga from "./saga";
+import rootSaga, { ACTIONS } from "./saga";
 // 事件总线
 const eventbus = new eventemitter();
-const ACTIONS = {
-  download: "DOWNLOAD",
-};
 // 倒计时
 // 事件连接器
 function countdown(secs) {

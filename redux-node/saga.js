@@ -1,10 +1,11 @@
 import { select, put, call, take, fork, race, delay } from "redux-saga/effects";
 
-const ACTIONS = {
+export const ACTIONS = {
   download: "DOWNLOAD",
 };
-function* httpDownload(url) {
+export function* httpDownload(url) {
   yield delay(3000);
+  return { url };
 }
 
 export function* startDownloadTask(
