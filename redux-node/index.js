@@ -5,10 +5,11 @@ import rootSaga, { ACTIONS } from "./saga";
 const eventbus = new eventemitter();
 // 倒计时
 // 事件连接器
-function countdown(secs) {
+export function countdown(secs) {
   return eventChannel((emitter) => {
     // 采用 eventbus 接受
     eventbus.onAny((action) => {
+      console.log(`action`,action)
       emitter(action);
     });
     let i = 0;
@@ -26,7 +27,7 @@ function countdown(secs) {
 }
 
 // 共享存储
-let state = {
+export let state = {
   a: 1,
   b: 2,
 };
@@ -34,8 +35,8 @@ runSaga(
   {
     //
     channel: countdown(10),
-    dispactch: (action) => {
-      eventemitter: emit(action);
+    dispatch: (action) => {
+      eventbus.emit(action);
     },
     getState: () => {
       return state;

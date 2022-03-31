@@ -2,20 +2,22 @@ import { select, put, call, take, fork, race, delay } from "redux-saga/effects";
 
 export const ACTIONS = {
   download: "DOWNLOAD",
+  downloadSuccess: "DOWNLOAD_SUCCESS",
+  downloadFail: "DOWNLOAD_FAIL",
 };
 export function* httpDownload(url) {
   yield delay(3000);
   return { url };
 }
 
-export function* startDownloadTask(
-  url,
+export function* retrySyncTimeout(
+  fn,
   { retryCount = 2, retryInterval = 1000, timeout = 1000 }
 ) {
   for (let i = 0; i < retryCount; i++) {
     try {
       let { isTimeout, result } = yield race({
-        result: call(httpDownload, url),
+        result: call(fn),
         isTimeout: delay(timeout),
       });
       if (isTimeout) {
@@ -23,9 +25,8 @@ export function* startDownloadTask(
       }
       return result;
       // yield call(httpDownload, url);
-      break;
     } catch (err) {
-      console.log(`retry ${url} ${i} ${err.message}`);
+      console.log(`retry ${i} ${err.message}`);
     } finally {
       console.log(i);
       console.log(retryCount);
@@ -36,6 +37,22 @@ export function* startDownloadTask(
     }
   }
 }
+/**
+ *
+ */
+export function* startDownloadTask(url, options) {
+  try {
+    const result = yield call(
+      retrySyncTimeout,
+      () => httpDownload(url),
+      options
+    );
+    yield put({ type: ACTIONS.downloadSuccess, payload: result });
+  } catch (error) {
+    yield put({ type: ACTIONS.downloadFail, payload: error.message });
+  }
+}
+
 export function* downloadManager() {
   console.log("Download start ");
   while (true) {

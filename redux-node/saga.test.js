@@ -1,4 +1,5 @@
-import rootSaga, { downloadManager, startDownloadTask } from "./saga";
+import rootSaga, { downloadManager, startDownloadTask, ACTIONS } from "./saga";
+import eventemitter from "eventemitter2";
 import { eventChannel, runSaga } from "redux-saga";
 import { cloneableGenerator } from "@redux-saga/testing-utils";
 import { select, put, call, take, fork, race, delay } from "redux-saga/effects";
@@ -21,13 +22,53 @@ describe("test rootSaga", () => {
 
 // 模拟测试整个 saga
 describe("test the full rootSaga", () => {
-  test('mockApi',()=>{
-    
-  })
+  test("mockApi", async () => {
+    // 倒计时
+    // 事件连接器
+    function countdown(secs) {
+      return eventChannel((emitter) => {
+        // 采用 eventbus 接受
+        eventbus.onAny((action) => {
+          emitter(action);
+        });
+        // 发送一次请求 应该返回失败
+        let i = 0;
+        eventbus.emit({
+          type: ACTIONS.download,
+          payload: { url: `http://www.baidu.com/file${i++}` },
+        });
+        return () => {
+          eventbus.offAny();
+        };
+      });
+    }
+    // 事件总线
+    const eventbus = new eventemitter();
+    // 共享存储
+    let state = {
+      a: 1,
+      b: 2,
+    };
+    const dispatches = [];
+    await runSaga(
+      {
+        channel: countdown(10),
+        dispatch: (action) => {
+          console.log(`action`, action);
+          dispatches.push(action);
+        },
+        getState: () => {
+          return state;
+        },
+      },
+      rootSaga
+    );
+
+    // 触发 downloadMangaer
+    expect(dispatches.length).toBe(1);
+    expect(dispatches[0].type).toEqual(ACTIONS.downloadFail);
+  });
 });
-
-
-
 
 describe("test downloadManager", () => {
   const state = {
