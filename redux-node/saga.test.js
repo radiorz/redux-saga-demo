@@ -190,9 +190,9 @@ describe("test the full retrySyncTimeout", () => {
     // console.log(`mockFn`, mockFn);
     // 收集 mockFn 的调用次数等等,应为 1次
     expect(mockFn.mock.calls.length).toBe(1);
+    // FIXME 为何 返回值为 undefined
     // retry 不会 put 应该看返回值
-    expect(mockFn.mock.calls[0].value).toEqual({data: url});
-
+    expect(mockFn.mock.calls[0].value).toEqual({ data: url });
   });
 });
 
