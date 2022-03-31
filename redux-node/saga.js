@@ -90,9 +90,9 @@ export function* downloadManager() {
         action.payload.url,
         {}
       ); // 非阻塞
-      // 停止下载
+      // TODO 停止下载
       //  let stopAction = yield take(ACTIONS.stopDownload)
-      //   if (stopAction.type === ACTIONS.stopDownload) {
+      //  if (stopAction.type === ACTIONS.stopDownload) {
       //     yield cancel(downloadTask)
       //     yield put({ type: ACTIONS.downloadFail, payload: `${action.payload.url} is stop` });
       //   }

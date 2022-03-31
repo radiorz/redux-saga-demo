@@ -21,8 +21,8 @@ describe("test rootSaga", () => {
 });
 
 // 模拟测试整个 saga
-describe("test the full rootSaga", () => {
-  // FIXME 这个 test执行不完
+describe("test the full downloadMangaer", () => {
+  // FIXME 这个 test 执行不完
   // jest.setTimeout(1000 * 20);
   test("eventbus 触发一次下载，测试是否 put 消息", async () => {
     // 事件总线
@@ -46,27 +46,21 @@ describe("test the full rootSaga", () => {
         };
       });
     }
-    // 共享存储
-    let state = {
-      a: "test",
-    };
     const dispatches = [];
+    // FIXME 这里 downloadManager 会无限循环 如何结束
     await runSaga(
       {
         channel: countdown(10),
         dispatch: (action) => {
-          console.log(`action`, action);
           dispatches.push(action);
         },
-        getState: () => {
-          return state;
-        },
+        getState: () => ({ state: "test" }),
       },
-      rootSaga
+      downloadManager
     ).toPromise();
-
+    
     // 触发 downloadMangaer
-    expect(dispatches.length).toBe(1);
+    expect(dispatches.length).toBe(4);
     expect(dispatches[0].type).toEqual(ACTIONS.downloadFail);
   });
 });
@@ -89,7 +83,7 @@ describe("test the full startDownloadTask", () => {
       url,
       { retryCount: 3, timeout: 1000 }
     ).toPromise();
-    console.log
+    console.log;
     expect(dispatches.length).toBe(4);
     expect(dispatches[0].type).toEqual(ACTIONS.retry);
     expect(dispatches[1].type).toEqual(ACTIONS.retry);
