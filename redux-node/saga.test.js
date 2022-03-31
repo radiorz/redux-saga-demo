@@ -8,20 +8,35 @@ beforeAll(() => {
   jest.setTimeout(1000 * 60 * 60);
 });
 
-describe("test rootSaga", () => {
-  const state = {
-    a: 1,
-    b: 2,
-  };
-  // FIXME 开始会获取 state
-  test("wait to select store", () => {
-    const gen = rootSaga();
-    return expect(gen.next().value).toEqual(select((state) => state));
+describe("test the full startDownloadTask", () => {
+  jest.setTimeout(1000 * 20);
+  test("startDownloadTask", async () => {
+    let url = "http://www.baidu.com/file0";
+    let dispatches = [];
+    await runSaga(
+      {
+        dispatch: (action) => {
+          dispatches.push(action);
+        },
+        getState: () => ({
+          state: "test",
+        }),
+      },
+      startDownloadTask,
+      url,
+      { retryCount: 3, timeout: 1000 }
+    ).toPromise();
+    console.log;
+    expect(dispatches.length).toBe(4);
+    expect(dispatches[0].type).toEqual(ACTIONS.retry);
+    expect(dispatches[1].type).toEqual(ACTIONS.retry);
+    expect(dispatches[2].type).toEqual(ACTIONS.retry);
+    expect(dispatches[3].type).toEqual(ACTIONS.downloadFail);
   });
 });
 
-// 模拟测试整个 saga
-describe("test the full downloadMangaer", () => {
+// 模拟测试整个 downloadManager
+describe("test the full downloadManager", () => {
   // FIXME 这个 test 执行不完
   // jest.setTimeout(1000 * 20);
   test("eventbus 触发一次下载，测试是否 put 消息", async () => {
@@ -58,40 +73,18 @@ describe("test the full downloadMangaer", () => {
       },
       downloadManager
     ).toPromise();
-    
+
     // 触发 downloadMangaer
     expect(dispatches.length).toBe(4);
     expect(dispatches[0].type).toEqual(ACTIONS.downloadFail);
   });
 });
 
-describe("test the full startDownloadTask", () => {
-  jest.setTimeout(1000 * 20);
-  test("startDownloadTask", async () => {
-    let url = "http://www.baidu.com/file0";
-    let dispatches = [];
-    await runSaga(
-      {
-        dispatch: (action) => {
-          dispatches.push(action);
-        },
-        getState: () => ({
-          state: "test",
-        }),
-      },
-      startDownloadTask,
-      url,
-      { retryCount: 3, timeout: 1000 }
-    ).toPromise();
-    console.log;
-    expect(dispatches.length).toBe(4);
-    expect(dispatches[0].type).toEqual(ACTIONS.retry);
-    expect(dispatches[1].type).toEqual(ACTIONS.retry);
-    expect(dispatches[2].type).toEqual(ACTIONS.retry);
-    expect(dispatches[3].type).toEqual(ACTIONS.downloadFail);
-  });
+describe("test the full retrySyncTimeout",()=>{
+  // TODO 未完待续
 });
 
+/** 以下为一步一步运行 */
 describe("test downloadManager", () => {
   const state = {
     a: 1,
@@ -130,3 +123,5 @@ describe("test downloadManager", () => {
     expect(clone.next(action).value).toEqual(take(ACTIONS.download));
   });
 });
+
+/**  */
