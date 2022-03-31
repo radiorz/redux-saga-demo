@@ -65,7 +65,7 @@ function* startDownloadTask(
     }
   }
 }
-function* downloadManager() {
+export function* downloadManager() {
   console.log("Download start ");
   while (true) {
     let action = yield take(ACTIONS.download); // 阻塞
@@ -84,7 +84,7 @@ function* downloadManager() {
 }
 
 // 入口 执行环境
-function* rootSaga() {
+export default function* rootSaga() {
   console.log("rootSaga");
   let state = yield select((state) => state);
   console.log(`state`, state);
