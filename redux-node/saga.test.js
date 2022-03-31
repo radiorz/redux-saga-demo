@@ -1,21 +1,21 @@
 import rootSaga, { downloadManager, startDownloadTask } from "./saga";
 import { select, put, call, take, fork, race, delay } from "redux-saga/effects";
+// FIXME 执行完毕 报错：  Cannot log after tests are done. Did you forget to wait for something async in your test?
 beforeAll(() => {
   jest.setTimeout(1000 * 60 * 60);
 });
 // 环境松耦合
-// describe("test rootSaga", () => {
-//   const state = {
-//     a: 1,
-//     b: 2,
-//   };
-// FIXME
-//   test("wait to select store", () => {
-//     const gen = rootSaga();
-//     return expect(gen.next().value).toEqual(select((state) => state));
-//   });
-
-// });
+describe("test rootSaga", () => {
+  const state = {
+    a: 1,
+    b: 2,
+  };
+  // FIXME 开始会获取 state
+  test("wait to select store", () => {
+    const gen = rootSaga();
+    return expect(gen.next().value).toEqual(select((state) => state));
+  });
+});
 
 describe("test downloadManager", () => {
   const state = {
@@ -41,4 +41,13 @@ describe("test downloadManager", () => {
       fork(startDownloadTask, action.payload.url, {})
     );
   });
+  test("the action is not download, just 重新 take 监听",()=>{
+    const action = {
+      type: "NOT_DOWNLOAD",
+      payload: {
+        url: "http://www.baidu.com",
+      },
+    };
+    expect(gen.next(action).value).toEqual(take(ACTIONS.download));
+  })
 });
