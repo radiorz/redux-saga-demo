@@ -1,11 +1,12 @@
 import rootSaga, { downloadManager, startDownloadTask } from "./saga";
+import { eventChannel, runSaga } from "redux-saga";
 import { cloneableGenerator } from "@redux-saga/testing-utils";
 import { select, put, call, take, fork, race, delay } from "redux-saga/effects";
 // FIXME 执行完毕 报错：  Cannot log after tests are done. Did you forget to wait for something async in your test?
 beforeAll(() => {
   jest.setTimeout(1000 * 60 * 60);
 });
-// 环境松耦合
+
 describe("test rootSaga", () => {
   const state = {
     a: 1,
@@ -17,6 +18,15 @@ describe("test rootSaga", () => {
     return expect(gen.next().value).toEqual(select((state) => state));
   });
 });
+
+// 模拟测试整个 saga
+describe("test rootSaga wholly", () => {
+  test('mockApi')
+
+});
+
+
+
 
 describe("test downloadManager", () => {
   const state = {

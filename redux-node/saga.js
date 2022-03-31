@@ -1,35 +1,5 @@
-import { eventChannel, runSaga } from "redux-saga";
 import { select, put, call, take, fork, race, delay } from "redux-saga/effects";
-import eventemitter from "eventemitter2";
-// 事件总线
-const eventbus = new eventemitter();
-// 倒计时
-// 事件连接器
 
-function countdown(secs) {
-  return eventChannel((emitter) => {
-    // 采用 eventbus 接受
-    eventbus.onAny((action) => {
-      emitter(action);
-    });
-    let i = 0;
-    // 定时发送
-    setInterval(() => {
-      eventbus.emit({
-        type: ACTIONS.download,
-        payload: { url: `http://www.baidu.com/file${i++}` },
-      });
-    }, 1000);
-    return () => {
-      eventbus.offAny();
-    };
-  });
-}
-// 共享存储
-let state = {
-  a: 1,
-  b: 2,
-};
 const ACTIONS = {
   download: "DOWNLOAD",
 };
@@ -91,16 +61,3 @@ export default function* rootSaga() {
   yield call(downloadManager); // 堵塞方法
   console.log();
 }
-runSaga(
-  {
-    //
-    channel: countdown(10),
-    dispactch: (action) => {
-      eventemitter: emit(action);
-    },
-    getState: () => {
-      return state;
-    },
-  },
-  rootSaga
-);
