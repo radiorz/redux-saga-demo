@@ -103,7 +103,7 @@ export function* downloadManager() {
 
     // node 是单线程的 所以不会出现漏掉的情况
     // 执行 异步函数 又会丢失???
-    yield delay(5000);
+    // yield delay(5000);
   }
 }
 
