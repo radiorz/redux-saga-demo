@@ -133,9 +133,41 @@ describe("test the full downloadManager", () => {
 
 describe("test the full retrySyncTimeout", () => {
   // TODO 未完待续
-  test("传入函数 当不断超时时的情况应该执行三次重试并触发4个抛错", async () => {
-    const mockFn = jest.fn(() => {
-      return { data: "test" };
+  const url = "http://www.baidu.com";
+  test("传入函数 当不断超时时的情况应该执行三次重试但 race 竞争掉了 mockFn 并触发4个抛错", async () => {
+    const mockFn = jest.fn(function* (url) {
+      yield delay(3000);
+      return { data: url };
+    });
+    const dispatches = [];
+    try {
+      await runSaga(
+        {
+          dispatch: (action) => {
+            dispatches.push(action);
+          },
+          getState: () => ({ state: "test" }),
+        },
+        retrySyncTimeout,
+        // 这里是参数
+        // FIXME 这里如何传入不同同个函数但返回不同的值
+        mockFn,
+        { retryCount: 3, timeout: 1000 },
+        url
+      ).toPromise();
+    } catch (err) {
+      expect(err.message).toEqual("download fail");
+    } finally {
+      // console.log(`mockFn`, mockFn);
+      // 收集 mockFn 的调用次数等等,应为
+      expect(mockFn.mock.calls.length).toBe(1);
+      expect(mockFn.mock.calls.value).toBe({ data: url });
+    }
+  });
+  test("传入函数 当没有超时时应执行一次 mockFn,并且抛出成功action", async () => {
+    // TODO 未完待续
+    const mockFn = jest.fn((url) => {
+      return { data: url };
     });
     const dispatches = [];
     await runSaga(
@@ -148,20 +180,15 @@ describe("test the full retrySyncTimeout", () => {
       retrySyncTimeout,
       // 这里是参数
       // FIXME 这里如何传入不同同个函数但返回不同的值
-      mockFn.mockReturnValue({ data: "test" }),
-      { retryCount: 3, timeout: 1000 }
+      mockFn,
+      { retryCount: 3, timeout: 10000 }
     ).toPromise();
     // console.log(`mockFn`, mockFn);
-    // FIXME 收集 mockFn 的调用次数等等
-    expect(mockFn).toBe();
+    // 收集 mockFn 的调用次数等等,应为 1次
+    expect(mockFn.mock.calls.length).toBe(1);
+    expect(mockFn.mock.calls[0].value).toBe({ data: url });
     expect(dispatches.length).toBe(4);
-    expect(dispatches[0].type).toEqual(ACTIONS.retry);
-    expect(dispatches[0].type).toEqual(ACTIONS.retry);
-    expect(dispatches[0].type).toEqual(ACTIONS.retry);
-    expect(dispatches[0].type).toEqual(ACTIONS.downloadFail);
-  });
-  test("传入函数 当没有超时时应执行一次 mockFn,并且抛出成功action", () => {
-    // TODO 未完待续
+    expect(dispatches[0].type).toEqual(ACTIONS.downloadSuccess);
   });
 });
 
