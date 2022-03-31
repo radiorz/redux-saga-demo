@@ -1,4 +1,4 @@
-import rootSaga, { downloadManager } from "./saga";
+import rootSaga, { downloadManager, startDownloadTask } from "./saga";
 import { select, put, call, take, fork, race, delay } from "redux-saga/effects";
 beforeAll(() => {
   jest.setTimeout(1000 * 60 * 60);
@@ -17,17 +17,28 @@ beforeAll(() => {
 
 // });
 
-describe("test downloadManager",()=>{
+describe("test downloadManager", () => {
   const state = {
     a: 1,
     b: 2,
   };
   const ACTIONS = {
     download: "DOWNLOAD",
-  }
-  test("wait to take action", () => {
-    const gen = downloadManager();
-    return expect(gen.next().value).toEqual(take(ACTIONS.download));
+  };
+  const gen = downloadManager();
+  test("wait to take action", (done) => {
+    expect(gen.next().value).toEqual(take(ACTIONS.download));
+    done();
   });
-
-})
+  test("the action is download,go to download", () => {
+    const action = {
+      type: ACTIONS.download,
+      payload: {
+        url: "http://www.baidu.com",
+      },
+    };
+    expect(gen.next(action).value).toEqual(
+      fork(startDownloadTask, action.payload.url, {})
+    );
+  });
+});

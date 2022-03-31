@@ -37,7 +37,7 @@ function* httpDownload(url) {
   yield delay(3000);
 }
 
-function* startDownloadTask(
+export function* startDownloadTask(
   url,
   { retryCount = 2, retryInterval = 1000, timeout = 1000 }
 ) {
