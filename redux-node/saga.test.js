@@ -161,14 +161,14 @@ describe("test the full retrySyncTimeout", () => {
       // console.log(`mockFn`, mockFn);
       // 收集 mockFn 的调用次数等等,应为
       expect(mockFn.mock.calls.length).toBe(3);
-      console.log(`mockFn.mock.calls`,mockFn.mock.calls)
+      console.log(`mockFn.mock.calls`, mockFn.mock.calls);
       // FIXME 是否被cancel 掉了
       expect(mockFn.mock.calls[0].value).toBeUndefined();
       expect(mockFn.mock.calls[1].value).toBeUndefined();
       expect(mockFn.mock.calls[2].value).toBeUndefined();
     }
   });
-  test("传入函数 当没有超时时应执行一次 mockFn,并且抛出成功action", async () => {
+  test.only("传入函数 当没有超时时应执行一次 mockFn,并且抛出成功action", async () => {
     // TODO 未完待续
     const mockFn = jest.fn((url) => {
       return { data: url };

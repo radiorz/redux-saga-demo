@@ -38,8 +38,9 @@ export function* retrySyncTimeout(fn, options, ...args) {
       yield put({
         type: ACTIONS.retry,
         payload: {
-          ...args,
-          error: err,
+          url: args[0],
+          error: err.message,
+          options: options,
           retryTimes: i,
         },
       });
