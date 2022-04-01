@@ -3,7 +3,6 @@ import { timeout as setFuncTimeout } from "../utils";
 import { select, put, take, call, delay, fork, race } from "redux-saga/effects";
 import sagaTester from "../sagaTester";
 describe("timeout", () => {
-  jest.setTimeout(1000 * 60);
   test("正常执行 不会超时", (done) => {
     let fn = function* () {
       console.log(123)
