@@ -9,7 +9,19 @@ export function countdown(secs) {
   return eventChannel((emitter) => {
     // 采用 eventbus 接受
     eventbus.onAny((action) => {
-      console.log(`action`,action)
+      // 处理 各种返回信息
+      if (action.type === ACTIONS.downloadBegin) {
+        state.tasks[action.payload.id] = action.payload;
+        state.tasks[action.payload.id].status = "DOWNLOAD_BEGIN";
+      } else if (action.type === ACTIONS.downloadProgress) {
+        state.tasks[action.payload.id] = action.payload;
+        state.tasks[action.payload.id].status = "DOWNLOADING";
+      } else if (action.type === ACTIONS.downlaodEnd) {
+        state.tasks[action.payload.id] = action.payload;
+        state.tasks[action.payload.id].status = "DOWNLOAD_END";
+      } else if (action.type === ACTIONS.downloadFail) {
+      }
+      console.log(`action`, action);
       emitter(action);
     });
     let i = 0;
@@ -30,17 +42,32 @@ export function countdown(secs) {
 export let state = {
   a: 1,
   b: 2,
+  // 保存下载任务
+  tasks: [
+    /* { url, payload ,progress,status } */
+  ],
 };
-runSaga(
-  {
-    //
-    channel: countdown(10),
-    dispatch: (action) => {
-      eventbus.emit(action);
+
+export function* theRootSaga(fn,...args) {
+  try {
+    yield fn(...args);
+  } catch (error) {}
+}
+const sagaTester = (fn,...args) => {
+  runSaga(
+    {
+      //
+      channel: countdown(10),
+      dispatch: (action) => {
+        eventbus.emit(action);
+      },
+      getState: () => {
+        return state;
+      },
     },
-    getState: () => {
-      return state;
-    },
-  },
-  rootSaga
-);
+    theRootSaga(fn,...args)
+  );
+};
+
+export default sagaTester;
+sagaTester(rootSaga);

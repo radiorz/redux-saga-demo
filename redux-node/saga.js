@@ -7,17 +7,32 @@ import {
   race,
   delay,
   cancel,
+  takeLatest,
 } from "redux-saga/effects";
-
+import { timeout } from "./utils";
 export const ACTIONS = {
   download: "DOWNLOAD",
   downloadSuccess: "DOWNLOAD_SUCCESS",
   downloadFail: "DOWNLOAD_FAIL",
   stopDownload: "SHOULD_STOP",
   retry: "RETRY",
+  downloadBegin: "DOWNLOAD_BEGIN",
+  downloadEnd: "DOWNLOAD_END",
+};
+export const MESSAGES = {
+  timeout: "TIMEOUT",
 };
 export function* httpDownload(url) {
-  yield delay(3000);
+  // 模拟进度汇报
+  for (let i = 0; i < 10; i++) {
+    yield delay(1000);
+    yield put({
+      type: ACTIONS.downloadProgress,
+      payload: {
+        progress: (i / 9) * 100,
+      },
+    });
+  }
   return { url };
 }
 
@@ -25,16 +40,8 @@ export function* retrySyncTimeout(fn, options, ...args) {
   const { retryCount = 2, retryInterval = 1000, timeout = 1000 } = options;
   for (let i = 0; i < retryCount; i++) {
     try {
-      let { isTimeout, result } = yield race({
-        result: call(fn, args),
-        isTimeout: delay(timeout),
-      });
-      if (isTimeout) {
-        throw new Error("TIMEOUT");
-      }
-      return result;
-      // yield call(httpDownload, url);
-    } catch (err) {
+      yield timeout(fn, timeout, ...args);
+    } catch (error) {
       yield put({
         type: ACTIONS.retry,
         payload: {
@@ -62,6 +69,7 @@ export function* startDownloadTask(
   options = { retryCount: 2, retryInterval: 1000, timeout: 1000 }
 ) {
   try {
+    yield put({ type: ACTIONS.downloadBegin, payload: { id: url } });
     const result = yield call(
       retrySyncTimeout,
       httpDownload,
@@ -86,17 +94,24 @@ export function* downloadManager() {
     if (action.type === ACTIONS.download) {
       // yield call(startDownloadTask, action.payload.url);  // 阻塞
       // 漏掉
-      const downloadTask = yield fork(
-        startDownloadTask,
-        action.payload.url,
-        {}
-      ); // 非阻塞
-      // TODO 停止下载
-      //  let stopAction = yield take(ACTIONS.stopDownload)
-      //  if (stopAction.type === ACTIONS.stopDownload) {
-      //     yield cancel(downloadTask)
-      //     yield put({ type: ACTIONS.downloadFail, payload: `${action.payload.url} is stop` });
-      //   }
+      let downloadTask;
+      try {
+        downloadTask = yield fork(startDownloadTask, action.payload.url, {}); // 非阻塞
+        // TODO 停止下载
+        let stopAction = yield take(ACTIONS.stopDownload);
+        if (stopAction.type === ACTIONS.stopDownload) {
+          yield cancel(downloadTask);
+          yield put({
+            type: ACTIONS.downloadFail,
+            payload: `${action.payload.url} is stop`,
+          });
+        }
+      } catch (error) {
+      } finally {
+        // if (takeLatest.cancelled()) {
+        //   console.log("cancelled");
+        // }
+      }
     }
 
     // 大量 阻塞 /fork(类似多线程)的的任务发生 实践 是否会让非阻塞 漏掉部分消息(悖论)
