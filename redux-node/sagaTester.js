@@ -3,7 +3,7 @@ import { eventChannel, runSaga } from "redux-saga";
 function* rootSaga(callback, fn, ...args) {
   try {
     let r = yield call(fn, ...args);
-    // ??? 这是啥
+    // 为测试预留接口的回调
     callback(null, r);
   } catch (error) {
     callback(error);

@@ -1,6 +1,6 @@
 import eventemitter from "eventemitter2";
 import { eventChannel, runSaga } from "redux-saga";
-import rootSaga, { ACTIONS } from "./saga";
+import { downloadManager, ACTIONS ,MESSAGES} from "./saga";
 // 事件总线
 const eventbus = new eventemitter();
 // 倒计时
@@ -12,13 +12,13 @@ export function countdown(secs) {
       // 处理 各种返回信息
       if (action.type === ACTIONS.downloadBegin) {
         state.tasks[action.payload.id] = action.payload;
-        state.tasks[action.payload.id].status = "DOWNLOAD_BEGIN";
+        state.tasks[action.payload.id].status = MESSAGES.downloadBegin;
       } else if (action.type === ACTIONS.downloadProgress) {
         state.tasks[action.payload.id] = action.payload;
-        state.tasks[action.payload.id].status = "DOWNLOADING";
+        state.tasks[action.payload.id].status = MESSAGES.downloading;
       } else if (action.type === ACTIONS.downlaodEnd) {
         state.tasks[action.payload.id] = action.payload;
-        state.tasks[action.payload.id].status = "DOWNLOAD_END";
+        state.tasks[action.payload.id].status = MESSAGES.downloadEnd;
       } else if (action.type === ACTIONS.downloadFail) {
       }
       console.log(`action`, action);
@@ -44,16 +44,16 @@ export let state = {
   b: 2,
   // 保存下载任务
   tasks: [
-    /* { url, payload ,progress,status } */
+    /* { url, payload,progress,status } */
   ],
 };
 
-export function* theRootSaga(fn,...args) {
+export function* theRootSaga(fn, ...args) {
   try {
     yield fn(...args);
   } catch (error) {}
 }
-const sagaTester = (fn,...args) => {
+const sagaTester = (fn, ...args) => {
   runSaga(
     {
       //
@@ -65,7 +65,7 @@ const sagaTester = (fn,...args) => {
         return state;
       },
     },
-    theRootSaga(fn,...args)
+    theRootSaga(fn, ...args)
   );
 };
 

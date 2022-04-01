@@ -3,7 +3,7 @@
  * @param {*} fn
  * @param {*} interval
  */
-export function* timeout(fn, interval, ...args) {
+export function* setFuncTimeout(fn, interval, ...args) {
   try {
     let { isTimeout, result } = yield race({
       result: call(fn, ...args),
