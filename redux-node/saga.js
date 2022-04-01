@@ -10,7 +10,7 @@ import {
   cancel,
   takeLatest,
 } from "redux-saga/effects";
-import { setFuncTimeout } from "./utils";
+import { timeout as setFuncTimeout } from "./utils";
 export const ACTIONS = {
   download: "DOWNLOAD_TASK",
   downloadSuccess: "DOWNLOAD_SUCCESS",
