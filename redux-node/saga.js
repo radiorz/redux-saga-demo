@@ -9,6 +9,7 @@ import {
   delay,
   cancel,
   takeLatest,
+  cancelled,
 } from "redux-saga/effects";
 import { timeout as setFuncTimeout } from "./utils";
 export const ACTIONS = {
@@ -61,9 +62,10 @@ export function* retrySyncTimeout(fn, options = {}, ...args) {
     retryCount = 2,
     retryInterval = 1000,
     timeout = 1000,
-    onSuccess,
-    onError,
-    onLastError,
+    onSuccess = () => {},
+    onError = () => {},
+    onLastError = () => {},
+    onCancel = () => {},
   } = options;
   for (let i = 0; i < retryCount; i++) {
     try {
@@ -76,14 +78,14 @@ export function* retrySyncTimeout(fn, options = {}, ...args) {
       lastError = error;
       yield onError({ error });
     } finally {
-      // TODO 判断是否被cancel 善后比如清除资源
-      // api cancelled
-      if (i === retryCount - 1) {
-        yield onLastError({ lastError });
-        throw new Error(MESSAGES.downloadFail);
-      }
-      yield delay(retryInterval);
+      // 判断是否被cancel 善后比如清除资源
+      if (yield cancelled()) onCancel();
     }
+    if (i === retryCount - 1) {
+      yield onLastError({ lastError });
+      throw new Error(MESSAGES.downloadFail);
+    }
+    yield delay(retryInterval);
   }
 }
 
@@ -108,6 +110,12 @@ function* onDownloadSuccess({ id, ...rest }) {
 function* onDownloadLastError({ id, ...rest }) {
   yield put({ type: ACTIONS.downloadFail, payload: { id, ...rest } });
 }
+function* onDownloadTaskCancelled({ id }) {
+  yield put({
+    type: ACTIONS.downloadFail,
+    payload: { id, error: "be cancelled" },
+  });
+}
 /**
  * 每个下载任务
  * 具有 完整的生命周期
@@ -130,16 +138,17 @@ export function* startDownloadTask(
         onSuccess: (options) => onDownloadSuccess({ id: taskId, ...options }),
         onLastError: (options) =>
           onDownloadLastError({ id: taskId, ...options }),
+        onCancel: () => onDownloadTaskCancelled({ id: taskId }),
       },
       url
     );
-    // TODO监听取消指令
-    // TODO take 收到结束任务信号 自治
     // 监听 reset 下载任务
     let action = yield waitForDownloadStop();
-    if (action.type === ACTIONS.CANCEL_DOWNLOAD) {
+    // 监听取消指令
+    if (action.type === ACTIONS.cancelDownload) {
       cancel(downloadTask);
     }
+    // take 收到结束任务信号 自治
     if (action === ACTIONS.downloadSuccess) {
       // 更新状态
     }
