@@ -178,25 +178,7 @@ export function* downloadManager() {
     // 编写下载任务
     let action = yield take(ACTIONS.download); // 阻塞
     if (action.type === ACTIONS.download) {
-      let downloadTask;
-      try {
-        downloadTask = yield fork(startDownloadTask, action.payload.url, {}); // 非阻塞
-        // TODO 停止下载每个任务的
-        let stopAction = yield take(ACTIONS.stopDownload);
-        if (stopAction.type === ACTIONS.stopDownload) {
-          yield cancel(downloadTask);
-          yield put({
-            type: ACTIONS.downloadFail,
-            payload: `${action.payload.url} is stop`,
-          });
-        }
-      } catch (error) {
-      } finally {
-        // TODO 结束后做点什么
-        // if (takeLatest.cancelled()) {
-        //   console.log("cancelled");
-        // }
-      }
+      yield fork(startDownloadTask, action.payload.url, {}); // 非阻塞
     }
   }
 }
