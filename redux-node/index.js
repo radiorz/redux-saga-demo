@@ -1,6 +1,6 @@
 import eventemitter from "eventemitter2";
 import { eventChannel, runSaga } from "redux-saga";
-import { downloadManager, ACTIONS ,MESSAGES} from "./saga";
+import { downloadManager, ACTIONS, MESSAGES } from "./saga";
 // 事件总线
 const eventbus = new eventemitter();
 // 倒计时
@@ -48,7 +48,7 @@ export let state = {
   ],
 };
 
-export function* theRootSaga(fn, ...args) {
+export function* rootSaga(fn, ...args) {
   try {
     yield fn(...args);
   } catch (error) {}
@@ -65,7 +65,9 @@ const sagaTester = (fn, ...args) => {
         return state;
       },
     },
-    theRootSaga(fn, ...args)
+    rootSaga,
+    downloadManager,
+    ...args
   );
 };
 
