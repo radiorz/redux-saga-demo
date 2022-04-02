@@ -27,10 +27,10 @@ export function countdown(secs) {
     let i = 0;
     // 定时发送
     setInterval(() => {
-      eventbus.emit({
-        type: ACTIONS.download,
-        payload: { url: `http://www.baidu.com/file${i++}` },
-      });
+    eventbus.emit({
+      type: ACTIONS.download,
+      payload: { url: `http://www.baidu.com/file${i++}` },
+    });
     }, 1000);
     return () => {
       eventbus.offAny();
@@ -65,7 +65,7 @@ const sagaTester = (fn, ...args) => {
         return state;
       },
     },
-    rootSaga,
+    fn,
     downloadManager,
     ...args
   );

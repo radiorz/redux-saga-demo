@@ -19,14 +19,16 @@ export const ACTIONS = {
   retry: "RETRY",
   downloadBegin: "DOWNLOAD_BEGIN",
   downloadEnd: "DOWNLOAD_END",
+  cancelDownload: "CANCEL_DOWNLOAD",
 };
 export const MESSAGES = {
   ...ACTIONS,
   downloadStart: "DOWNLOAD_START",
-  downloading:"DOWNLOADING",
+  downloading: "DOWNLOADING",
   timeout: "TIMEOUT",
   downloadFail: "DOWNLOAD_FAIL",
 };
+
 function* getFile() {
   yield delay(1000);
 }
@@ -53,25 +55,62 @@ export function* httpDownload(url) {
   return { url };
 }
 
-export function* retrySyncTimeout(fn, options, ...args) {
-  const { retryCount = 2, retryInterval = 1000, timeout = 1000 } = options;
+export function* retrySyncTimeout(fn, options = {}, ...args) {
+  let lastError = null;
+  const {
+    retryCount = 2,
+    retryInterval = 1000,
+    timeout = 1000,
+    onSuccess,
+    onError,
+    onLastError,
+  } = options;
   for (let i = 0; i < retryCount; i++) {
     try {
       // 是否超时
-      yield call(setFuncTimeout, fn, timeout, ...args);
+      const result = yield call(setFuncTimeout, fn, timeout, ...args);
+      // 发送成功消息
+      yield onSuccess({ result });
+      return result;
     } catch (error) {
-      yield put({ type: ACTIONS.retry });
-      // throw error;
+      lastError = error;
+      yield onError({ error });
     } finally {
+      // TODO 判断是否被cancel 善后比如清除资源
+      // api cancelled
       if (i === retryCount - 1) {
+        yield onLastError({ lastError });
         throw new Error(MESSAGES.downloadFail);
       }
       yield delay(retryInterval);
     }
   }
 }
+
 /**
- *
+ * 获取任务中止 action
+ */
+function* waitForDownloadStop() {
+  return yield take([
+    ACTIONS.downloadSuccess,
+    ACTIONS.downloadFail,
+    ACTIONS.cancelDownload,
+  ]);
+}
+
+function* onDownloadError({ id, ...rest }) {
+  yield put({ type: ACTIONS.downloadError, payload: { id, ...rest } });
+}
+
+function* onDownloadSuccess({ id, ...rest }) {
+  yield put({ type: ACTIONS.downloadSuccess, payload: { id, ...rest } });
+}
+function* onDownloadLastError({ id, ...rest }) {
+  yield put({ type: ACTIONS.downloadFail, payload: { id, ...rest } });
+}
+/**
+ * 每个下载任务
+ * 具有 完整的生命周期
  */
 export function* startDownloadTask(
   url,
@@ -82,26 +121,47 @@ export function* startDownloadTask(
     let taskId = nanoid();
     // 开始下载信号
     yield put({ type: ACTIONS.downloadBegin, payload: { url, id: taskId } });
-    const result = yield call(
+    const downloadTask = yield fork(
       retrySyncTimeout,
       httpDownload,
       {
         ...options,
+        onError: (options) => onDownloadError({ id: taskId, ...options }),
+        onSuccess: (options) => onDownloadSuccess({ id: taskId, ...options }),
+        onLastError: (options) =>
+          onDownloadLastError({ id: taskId, ...options }),
       },
       url
     );
-    yield put({ type: ACTIONS.downloadSuccess, payload: result });
+    // TODO监听取消指令
+    // TODO take 收到结束任务信号 自治
+    // 监听 reset 下载任务
+    let action = yield waitForDownloadStop();
+    if (action.type === ACTIONS.CANCEL_DOWNLOAD) {
+      cancel(downloadTask);
+    }
+    if (action === ACTIONS.downloadSuccess) {
+      // 更新状态
+    }
+    if (action === ACTIONS.downloadFail) {
+      // 更新状态
+    }
+    // TODO 上级任务被结束
+    // 全部停止全部开始... 每个 任务
   } catch (error) {
-    if (error.message === ACTIONS.retry)
-      yield put({
-        type: ACTIONS.downloadFail,
-        payload: `${url} ${error.message}`,
-      });
+    if (error.message === ACTIONS.retry) {
+    }
+    yield put({
+      type: ACTIONS.downloadFail,
+      payload: { url, error: lastError },
+    });
   }
 }
 
 /**
  * 下载任务循环模块
+ * 功能: 强制取消
+ * 错误处理 状态更新 恢复 持久化...暂停..
  */
 export function* downloadManager() {
   console.log(`downloadManager is running`);
@@ -112,7 +172,7 @@ export function* downloadManager() {
       let downloadTask;
       try {
         downloadTask = yield fork(startDownloadTask, action.payload.url, {}); // 非阻塞
-        // TODO 停止下载
+        // TODO 停止下载每个任务的
         let stopAction = yield take(ACTIONS.stopDownload);
         if (stopAction.type === ACTIONS.stopDownload) {
           yield cancel(downloadTask);
